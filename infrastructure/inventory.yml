@@ -1,0 +1,22 @@
+routers:
+  hosts:
+    router:
+      ansible_host: 192.168.20.251
+      ansible_user: vyos
+
+switches:
+  hosts:
+    switch-001:
+    switch-002:
+
+proxmox:
+  hosts:
+    hv-001:
+    hv-002:
+    hv-003:
+
+all:
+  children:
+    router:
+    switches:
+    proxmox:

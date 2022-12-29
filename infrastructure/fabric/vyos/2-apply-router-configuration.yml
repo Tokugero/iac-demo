@@ -1,0 +1,118 @@
+---
+- name: Initial Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
+  hosts: router
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: vyos.vyos.vyos
+    ansible_user: "{{ lookup('ansible.builtin.env', 'vyos_user') }}"
+  tasks:
+    - name: Deploy configuration
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: eth0
+            description: "Internal Lan 1 - Configured by Ansible"
+            enabled: true
+          - name: eth3
+            description: "External - Configured by Ansible"
+            enabled: true
+        state: replaced
+
+    - name: Set IPs
+      vyos.vyos.vyos_config:
+        lines:
+          - set interfaces ethernet eth0 address '10.10.10.1/24'
+          - set interfaces ethernet eth3 address dhcp
+
+    - name: Setup DHCP
+      vyos.vyos.vyos_config:
+        lines:
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 default-router '10.10.10.1'
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 name-server '10.10.10.1'
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 domain-name 'minilab.tokugero.com'
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 lease '86400'
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 range 0 start '10.10.10.100'
+          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 range 0 stop '10.10.10.200'
+
+    - name: Setup DNS
+      vyos.vyos.vyos_config:
+        lines:
+          - set service dns forwarding cache-size 0
+          - set service dns forwarding listen-address '10.10.10.1'
+          - set service dns forwarding allow-from '10.10.10.0/24'
+
+    - name: Setup Local DNS
+      vyos.vyos.vyos_config:
+        lines:
+          - set system name-server 1.1.1.1
+
+    - name: Setup NAT
+      vyos.vyos.vyos_config:
+        lines:
+          - set nat source rule 100 outbound-interface eth3
+          - set nat source rule 100 source address '10.10.10.0/24'
+          - set nat source rule 100 translation address masquerade
+
+    - name: Enable SSH
+      vyos.vyos.vyos_config:
+        lines:
+          - set service ssh port 22
+
+    - name: Setup firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets:
+              - name: "OUTSIDE-IN"
+                default_action: drop
+                rules:
+                  - number: 10
+                    action: accept
+                    state:
+                      established: true
+                      related: true
+                    description: "Allow established sessions"
+              - name: "OUTSIDE-LOCAL"
+                default_action: drop
+                rules:
+                  - number: 10
+                    action: accept
+                    state:
+                      established: true
+                      related: true
+                    description: "Allow established sessions"
+                  - number: 20
+                    action: accept
+                    protocol: icmp
+                    icmp:
+                      type_name: echo-request
+                    state:
+                      new: true
+                    description: "Allow SSH"
+                  - number: 30
+                    action: accept
+                    protocol: tcp
+                    destination:
+                      port: "22"
+                    state:
+                      new: true
+                    description: "Allow SSH"
+        state: merged
+
+    - name: Bind firewall rules to interfaces
+      vyos.vyos.vyos_firewall_interfaces:
+        config:
+          - name: eth3
+            access_rules:
+              - afi: ipv4
+                rules:
+                  - name: "OUTSIDE-LOCAL"
+                    direction: local
+                  - name: "OUTSIDE-IN"
+                    direction: in
+        state: merged
+
+    - name: Setup SSH keys
+      vyos.vyos.vyos_config:
+        lines:
+          - set system login user {{ lookup('ansible.builtin.env', 'vyos_user') }} authentication public-keys bootstrap key {{ lookup('ansible.builtin.env', 'vyos_ssh_key') }}
+          - set system login user {{ lookup('ansible.builtin.env', 'vyos_user') }} authentication public-keys bootstrap type {{ lookup('ansible.builtin.env', 'vyos_ssh_type') }}

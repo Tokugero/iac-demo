@@ -1,0 +1,13 @@
+---
+- name: Initial Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
+  hosts: router
+  tasks:
+    - name: Copy docker-compose
+      copy:
+        src: docker-compose.yml
+        dest: /config/user-data/docker-compose.yml
+        owner: "{{ lookup('env', 'vyos_user') }}"
+        mode: "0644"
+
+    - name: Start services
+      shell: docker-compose -f /config/user-data/docker-compose.yml up -d

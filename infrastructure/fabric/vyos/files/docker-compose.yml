@@ -1,0 +1,25 @@
+---
+x-vyos-defaults: &vyos-defaults
+  restart: unless-stopped
+    
+services:
+  unifi-controller:
+    <<: *vyos-defaults
+    image: lscr.io/linuxserver/unifi-controller:latest
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - TZ='America/Los_Angeles'
+    volumes:
+      - /config/user-data/unifi/config:/config
+    ports:
+    - 8443:8443
+    - 3478:3478/udp
+    - 10001:10001/udp
+    - 8080:8080
+    - 1900:1900/udp #optional
+    - 8843:8843 #optional
+    - 8880:8880 #optional
+    - 6789:6789 #optional
+    - 5514:5514/udp #optional
+    

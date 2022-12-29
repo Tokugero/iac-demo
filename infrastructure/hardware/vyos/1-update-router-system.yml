@@ -1,0 +1,131 @@
+---
+- name: Initial Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
+  hosts: router
+  become: yes
+  tasks:
+    # Based on this gist: https://gist.github.com/Cremator/183c1a4d24e7812f94ec4bd41f7718b3
+    - name: Add Debian repo
+      apt_repository:
+        repo: deb http://deb.debian.org/debian bullseye main contrib non-free
+        state: present
+
+    - name: Update Debian repo and install first packages
+      apt:
+        update_cache: yes
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg2
+          - software-properties-common
+          - vim
+
+    - name: Add docker gpg key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add docker repo
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
+        state: present
+
+    - name: Make persistent var for docker to live between vyos upgrades
+      file:
+        path: /config/user-data/docker
+        state: directory
+        mode: 0755
+        owner: vyos
+
+    - name: Link persistent directory
+      file:
+        src: /config/user-data/docker
+        dest: /var/lib/docker
+        state: link
+        force: yes
+
+    - name: Update Debian repo and install docker
+      apt:
+        update_cache: yes
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+
+    - name: Get docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.27.4/docker-compose-Linux-x86_64
+        dest: /config/user-data/docker/docker-compose
+
+    - name: Update compose perms
+      file:
+        path: /config/user-data/docker/docker-compose
+        mode: 0755
+
+    - name: Link compose to path
+      file:
+        src: /config/user-data/docker/docker-compose
+        dest: /usr/local/bin/docker-compose
+        state: link
+        force: yes
+
+    - name: Disable system start of Docker (Needs to happen after iptables events)
+      systemd:
+        name: docker
+        enabled: no
+        masked: no
+
+    - name: Check if VyOS has priority on docker startup
+      lineinfile:
+        state: absent
+        path: /config/scripts/vyos-postconfig-bootup.script
+        regexp: "^systemctl start docker$"
+      check_mode: true
+      changed_when: false
+      register: vyos_docker_startup
+
+    - name: Add VyOS priority on docker startup
+      lineinfile:
+        state: present
+        path: /config/scripts/vyos-postconfig-bootup.script
+        line: "systemctl start docker"
+      when: vyos_docker_startup.found == 0
+
+    - name: Add VyOS to docker group
+      user:
+        name: vyos
+        groups: docker
+        append: yes
+
+    - name: Check if VyOS has priority on docker startup
+      lineinfile:
+        state: absent
+        path: /config/scripts/vyos-postconfig-bootup.script
+        regexp: "^usermod -aG docker {{ lookup('env', 'vyos_user') }}$"
+      check_mode: true
+      changed_when: false
+      register: vyos_user_startup
+
+    - name: Persist docker group
+      lineinfile:
+        state: present
+        path: /config/scripts/vyos-postconfig-bootup.script
+        line: "usermod -aG docker {{ lookup('env', 'vyos_user') }}"
+      when: vyos_user_startup.found == 0
+
+    - name: Create Unifi directory
+      file:
+        path: /config/user-data/unifi/config
+        state: directory
+        mode: 0755
+        owner: vyos
+
+    - name: Copy docker-compose
+      copy:
+        src: unifi/docker-compose.yml
+        dest: /config/user-data/unifi/docker-compose.yml
+        mode: 0644
+        owner: vyos
+        group: vyos
+        force: yes
+      notify: restart unifi
