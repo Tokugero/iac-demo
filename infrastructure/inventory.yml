@@ -3,7 +3,11 @@ routers:
     router:
       ansible_host: 192.168.20.251
       ansible_user: vyos
-
+      dhcp:
+        scope_name: MINILAB
+        subnet: 10.10.10.0/24
+      router_internal_ip: 10.10.10.1
+      
 switches:
   hosts:
     switch-001:
@@ -11,12 +15,24 @@ switches:
 
 proxmox:
   hosts:
-    hv-001:
-    hv-002:
-    hv-003:
+    mini-pve-001:
+      mac: "64:51:06:51:2b:93"
+      ansible_host: 10.10.10.11
+    mini-pve-002:
+      mac: "ec:b1:d7:5f:50:76"
+      ansible_host: 10.10.10.12
+    mini-pve-003:
+      mac: "64:51:06:51:2b:52"
+      ansible_host: 10.10.10.13
 
+controllers:
+  hosts:
+    raspberrypi:
+      mac: "e4:5f:01:6b:de:45"
+      ansible_host: 10.10.10.20
 all:
   children:
     router:
     switches:
     proxmox:
+    controllers:

@@ -4,7 +4,7 @@
   vars:
     ansible_connection: ansible.netcommon.network_cli
     ansible_network_os: vyos.vyos.vyos
-    ansible_user: "{{ lookup('ansible.builtin.env', 'vyos_user') }}"
+    ansible_user: "{{ hostvars['router']['ansible_user'] }}"
   tasks:
     - name: Deploy configuration
       vyos.vyos.vyos_interfaces:
@@ -26,19 +26,19 @@
     - name: Setup DHCP
       vyos.vyos.vyos_config:
         lines:
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 default-router '10.10.10.1'
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 name-server '10.10.10.1'
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 domain-name 'minilab.tokugero.com'
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 lease '86400'
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 range 0 start '10.10.10.100'
-          - set service dhcp-server shared-network-name MINILAB subnet 10.10.10.0/24 range 0 stop '10.10.10.200'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} default-router '{{ hostvars['router']['router_internal_ip'] }}'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} name-server '{{ hostvars['router']['router_internal_ip'] }}'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} domain-name 'minilab.tokugero.com'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} lease '86400'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} range 0 start '10.10.10.100'
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} range 0 stop '10.10.10.200'
 
     - name: Setup DNS
       vyos.vyos.vyos_config:
         lines:
           - set service dns forwarding cache-size 0
-          - set service dns forwarding listen-address '10.10.10.1'
-          - set service dns forwarding allow-from '10.10.10.0/24'
+          - set service dns forwarding listen-address '{{ hostvars['router']['router_internal_ip'] }}'
+          - set service dns forwarding allow-from '{{ hostvars['router']['dhcp']['subnet'] }}'
 
     - name: Setup Local DNS
       vyos.vyos.vyos_config:
@@ -49,13 +49,38 @@
       vyos.vyos.vyos_config:
         lines:
           - set nat source rule 100 outbound-interface eth3
-          - set nat source rule 100 source address '10.10.10.0/24'
+          - set nat source rule 100 source address '{{ hostvars['router']['dhcp']['subnet'] }}'
           - set nat source rule 100 translation address masquerade
 
     - name: Enable SSH
       vyos.vyos.vyos_config:
         lines:
           - set service ssh port 22
+
+    - name: Stop Docker
+      command: systemctl stop docker
+      vars:
+        ansible_connection: ssh
+        ansible_become: yes
+
+    - name: Clear iptables
+      command: iptables -F
+      vars:
+        ansible_connection: ssh
+        ansible_become: yes
+
+    - name: Unbind firewall rules to interfaces
+      vyos.vyos.vyos_firewall_interfaces:
+        config:
+          - name: eth3
+            access_rules:
+              - afi: ipv4
+                rules:
+                  - name: "OUTSIDE-LOCAL"
+                    direction: local
+                  - name: "OUTSIDE-IN"
+                    direction: in
+        state: deleted
 
     - name: Setup firewall rules
       vyos.vyos.vyos_firewall_rules:
@@ -111,8 +136,14 @@
                     direction: in
         state: merged
 
+    - name: Start Docker
+      command: systemctl start docker
+      vars:
+        ansible_become: yes
+        ansible_connection: ssh
+
     - name: Setup SSH keys
       vyos.vyos.vyos_config:
         lines:
-          - set system login user {{ lookup('ansible.builtin.env', 'vyos_user') }} authentication public-keys bootstrap key {{ lookup('ansible.builtin.env', 'vyos_ssh_key') }}
-          - set system login user {{ lookup('ansible.builtin.env', 'vyos_user') }} authentication public-keys bootstrap type {{ lookup('ansible.builtin.env', 'vyos_ssh_type') }}
+          - set system login user {{ hostvars['router']['ansible_user'] }} authentication public-keys bootstrap key {{ lookup('ansible.builtin.env', 'vyos_ssh_key') }}
+          - set system login user {{ hostvars['router']['ansible_user'] }} authentication public-keys bootstrap type {{ lookup('ansible.builtin.env', 'vyos_ssh_type') }}

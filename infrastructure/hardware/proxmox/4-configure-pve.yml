@@ -1,0 +1,31 @@
+---
+- name: "Deploy and configure PVE cluster"
+  hosts: proxmox
+  tasks:
+    - name: Configure static IP mappings on VyOS
+      vars:
+        ansible_connection: ansible.netcommon.network_cli
+        ansible_network_os: vyos.vyos.vyos
+        ansible_user: "{{ hostvars['router']['ansible_user'] }}"
+      vyos.vyos.vyos_config:
+        lines:
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ inventory_hostname }} mac-address {{ mac }}
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ inventory_hostname }} ip-address  {{ ansible_host }}
+
+    - name: Get current IP from dynamic leases (May not be configured at runtime yet)
+      vars:
+        ansible_connection: ansible.netcommon.network_cli
+        ansible_network_os: vyos.vyos.vyos
+        ansible_user: "{{ hostvars['router']['ansible_user'] }}"
+      vyos.vyos.vyos_command:
+        commands:
+          - command: show dhcp server leases | grep {{ mac }} | awk '{print $1}'
+        register: current_ip
+
+    #- name: Do updates of host
+    #  vars:
+    #    ansible_host: "{{ current_ip.stdout }}"
+
+    #- name: Build cluster
+#
+#- name: Define load balancer
