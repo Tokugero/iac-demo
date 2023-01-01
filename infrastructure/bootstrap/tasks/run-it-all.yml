@@ -1,0 +1,6 @@
+---
+- import_playbook: ../../hardware/vyos/1-update-router-system.yml
+- import_playbook: ../../fabric/vyos/2-apply-router-configuration.yml
+- import_playbook: ../../fabric/vyos/3-deploy-containers.yml
+- import_playbook: ../../hardware/proxmox/5-configure-pve.yml
+- import_playbook: ../../hardware/raspberrypi/6-configure-pi.yml

@@ -1,5 +1,5 @@
 ---
-- name: Initial Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
+- name: Deploy containers # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
   hosts: router
   tasks:
     - name: Copy docker-compose

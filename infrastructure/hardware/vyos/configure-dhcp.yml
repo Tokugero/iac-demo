@@ -1,0 +1,21 @@
+---
+- name: "Deploy and configure PVE cluster"
+  hosts: routers
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: vyos.vyos.vyos
+    ansible_user: "{{ hostvars['router']['ansible_user'] }}"
+  tasks:
+    - name: Configure Proxmox Static IP mappings on VyOS
+      vyos.vyos.vyos_config:
+        lines:
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ hostvars[item].inventory_hostname }} mac-address {{ hostvars[item].mac }}
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ hostvars[item].inventory_hostname }} ip-address  {{ hostvars[item].ansible_host }}
+      with_items: "{{ groups['proxmox'] }}"
+
+    - name: Configure Controller static IP mappings on VyOS
+      vyos.vyos.vyos_config:
+        lines:
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ hostvars[item].inventory_hostname }} mac-address {{ hostvars[item].mac }}
+          - set service dhcp-server shared-network-name {{ hostvars['router']['dhcp']['scope_name'] }} subnet {{ hostvars['router']['dhcp']['subnet'] }} static-mapping {{ hostvars[item].inventory_hostname }} ip-address  {{ hostvars[item].ansible_host }}
+      with_items: "{{ groups['controllers'] }}"

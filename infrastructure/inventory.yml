@@ -1,3 +1,9 @@
+proxy:
+  hosts:
+    proxy:
+      ansible_host: 192.168.20.115 # Raspberry Pi Wifi
+      ansible_user: tokugero
+
 routers:
   hosts:
     router:
@@ -14,22 +20,30 @@ switches:
     switch-002:
 
 proxmox:
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -J tokugero@192.168.20.115'
+    ansible_user: root
   hosts:
     mini-pve-001:
       mac: "64:51:06:51:2b:93"
-      ansible_host: 10.10.10.11
+      ansible_host: 10.10.10.104
+      primary: true
     mini-pve-002:
       mac: "ec:b1:d7:5f:50:76"
-      ansible_host: 10.10.10.12
+      ansible_host: 10.10.10.105
+      primary_node: mini-pve-001
     mini-pve-003:
       mac: "64:51:06:51:2b:52"
-      ansible_host: 10.10.10.13
+      ansible_host: 10.10.10.106
+      primary_node: mini-pve-001
 
 controllers:
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -J tokugero@192.168.20.115'
   hosts:
     raspberrypi:
       mac: "e4:5f:01:6b:de:45"
-      ansible_host: 10.10.10.20
+      ansible_host: 10.10.10.100
 all:
   children:
     router:

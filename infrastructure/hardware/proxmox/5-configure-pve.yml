@@ -1,0 +1,50 @@
+---
+- import_playbook: ../vyos/configure-dhcp.yml
+- name: "Deploy and configure PVE cluster"
+  hosts: proxmox
+  tasks:
+    - name: Remove pro repo
+      file:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        state: absent
+
+    - name: Add free repo
+      apt_repository:
+        repo: deb [arch=amd64] http://download.proxmox.com/debian/pve bullseye pve-no-subscription
+        state: present
+
+    - name: Do updates of host
+      apt:
+        update_cache: yes
+        upgrade: safe
+
+    - name: Set host files
+      lineinfile:
+        path: /etc/hosts
+        regexp: ".*\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+        line: "{{ hostvars[item]['ansible_host'] }}\t{{ hostvars[item]['ansible_hostname']}}\t{{ hostvars[item]['ansible_hostname']}}"
+      with_items: "{{ groups['proxmox'] }}"
+
+    - name: Check cluster status
+      command: pvecm status
+      register: host_cluster_status
+      ignore_errors: yes
+
+    - name: Enable primary and set cluster mode
+      when: host_cluster_status is failed and hostvars[inventory_hostname]['primary'] is true
+      command: pvecm create minilab
+
+    # TODO: Pass around temporary SSH keys to allow this non-interactively
+
+    - name: Join primary if not primary
+      when: host_cluster_status is failed and hostvars[inventory_hostname]['primary_node'] is defined
+      command: pvecm add {{ primary_node }}
+
+    - name: Get current state of all nodes
+      command: pvecm nodes
+      register: host_cluster_nodes
+
+    - name: Output nodes
+      debug:
+        msg: "{{ host_cluster_nodes.stdout_lines }}"
+      when: host_cluster_status is not failed

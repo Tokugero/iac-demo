@@ -1,0 +1,42 @@
+---
+- import_playbook: ../vyos/configure-dhcp.yml
+- name: "Configure Pi controller"
+  hosts: controllers
+  become: true
+  tasks:
+    - name: "Update Pi controller"
+      apt:
+        update_cache: yes
+        pkg:
+          - screen
+          - vim
+
+    - name: "Get docker install script"
+      get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: 0755
+        force: true
+
+    - name: "Install docker"
+      shell: /tmp/get-docker.sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: "Get docker-compose"
+      get_url:
+        url: https://raw.githubusercontent.com/linuxserver/docker-docker-compose/v2/run.sh
+        dest: /usr/local/bin/docker-compose
+        mode: 0755
+
+    - name: "Add pi to group"
+      user:
+        name: pi
+        groups: docker
+        append: yes
+
+    - name: "Add tokugero to group"
+      user:
+        name: tokugero
+        groups: docker
+        append: yes

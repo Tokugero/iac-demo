@@ -32,14 +32,14 @@
 
     - name: Make persistent var for docker to live between vyos upgrades
       file:
-        path: /config/user-data/docker
+        path: /config/user-data/docker/var
         state: directory
         mode: 0755
         owner: vyos
 
     - name: Link persistent directory
       file:
-        src: /config/user-data/docker
+        src: /config/user-data/docker/var
         dest: /var/lib/docker
         state: link
         force: yes
@@ -122,10 +122,9 @@
 
     - name: Copy docker-compose
       copy:
-        src: unifi/docker-compose.yml
+        src: ../../fabric/vyos/files/docker-compose.yml
         dest: /config/user-data/unifi/docker-compose.yml
         mode: 0644
         owner: vyos
-        group: vyos
         force: yes
       notify: restart unifi

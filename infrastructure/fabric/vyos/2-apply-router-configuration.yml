@@ -1,5 +1,5 @@
 ---
-- name: Initial Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
+- name: Secondary Router Configuration # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
   hosts: router
   vars:
     ansible_connection: ansible.netcommon.network_cli

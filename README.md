@@ -5,6 +5,7 @@
 ./applications contains the manifests to be deployed by ArgoCD
 ./infrastructure contains the ansible & terraform to bootstrap and manage the infrastructure from k8s to baremetal
 ./gencharts contains the code to generate the helm charts for the applications
+./infrastructure/bootstrap/tasks/run-it-all.yml runs all applicable playbooks to configure all 6 components -> router, switches, hosts
 
 ## Purpose
 
@@ -14,20 +15,20 @@ To demonstrate my skills with SRE & DevOps functionality as a snapshot in time a
 
 `Note: This section will be updated as the project progresses`
 
-- [ ] Ansible defined controller (Raspberry Pi)
+- [x] Ansible defined controller (Raspberry Pi)
   - [x] ProtecCLI/VyOS Network Infrastructure
   - [x] Unifi Controller
   - [ ] MaaS.io (metal as a service) - bonus points
   - [ ] Load Balancer
   - [ ] Nexus Docker Image Caching
   - [ ] Jenkins CI/CD
-- [ ] ProxMox Physical Hypervisors
-  - [ ] Provisioned via Ansible
-  - [ ] Updated via Ansible
+- [x] ProxMox Physical Hypervisors
+  - [x] Provisioned via Ansible
+  - [x] Updated via Ansible
 - [ ] Terraform defined supplemental infrastructure
 - [ ] Terraform defined Kubernetes cluster
-  - [ ] Deployed via Ansible
-  - [ ] Updated via Ansible
+  - [ ] Deployed via Terraform
+  - [ ] Updated via Terraform
 - [ ] CDK8s defined supplemental infrastructure
   - [ ] Python Diagrams Implementation (bonus points)
   - [ ] Linkerd2 App Mesh
