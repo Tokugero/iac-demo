@@ -1,9 +1,3 @@
-proxy:
-  hosts:
-    proxy:
-      ansible_host: 192.168.20.115 # Raspberry Pi Wifi
-      ansible_user: tokugero
-
 routers:
   hosts:
     router:
@@ -13,6 +7,12 @@ routers:
         scope_name: MINILAB
         subnet: 10.10.10.0/24
       router_internal_ip: 10.10.10.1
+      persistent_path: /config/user-data
+      containers:
+        - name: unifi
+          path: fabric/unifi/
+        - name: nginx
+          path: fabric/nginx/
       
 switches:
   hosts:
@@ -44,6 +44,13 @@ controllers:
     raspberrypi:
       mac: "e4:5f:01:6b:de:45"
       ansible_host: 10.10.10.100
+      persistent_path: /opt/services
+      containers: 
+        - name: nexus
+          path: fabric/jenkins/
+        - name: nginx
+          path: fabric/nexus/
+
 all:
   children:
     router:

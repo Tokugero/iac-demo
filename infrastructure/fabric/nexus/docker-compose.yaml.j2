@@ -1,0 +1,7 @@
+  nexus:
+    image: sonatype/nexus3
+    ports:
+    - 8001:8001
+    volumes:
+    - {{ persistent_path }}/nexus:/nexus-data
+    restart: unless-stopped

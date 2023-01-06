@@ -40,3 +40,20 @@
         name: tokugero
         groups: docker
         append: yes
+
+    - name: "Set mount path"
+      file:
+        path: "{{ persistent_path }}"
+        state: directory
+        owner: pi
+        group: pi
+        mode: 0755
+
+    - name: "Update fstab with external storage"
+      become: yes
+      mount:
+        path: "{{ persistent_path }}"
+        src: /dev/sda1
+        fstype: ext4
+        opts: defaults
+        state: mounted

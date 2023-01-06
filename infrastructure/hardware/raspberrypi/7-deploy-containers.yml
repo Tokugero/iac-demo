@@ -1,0 +1,43 @@
+---
+- name: "Deploy pi containers"
+  hosts: controllers
+  become: yes
+  tasks:
+    - name: Stop docker-compose services
+      shell: "cd {{ persistent_path }} && docker-compose -f {{ persistent_path }}/docker-compose.yml down"
+      ignore_errors: true
+
+    - name: "Move docker-compose to backup"
+      command: "mv {{ persistent_path }}/docker-compose.yml {{ persistent_path }}/docker-compose.yml.bak"
+      ignore_errors: true
+
+    - name: "Create docker-compose"
+      copy:
+        src: docker-compose.yml
+        dest: "{{ persistent_path }}/docker-compose.yml"
+        mode: "0644"
+        owner: pi
+
+    - name: Copy Container Configs
+      loop: "{{ containers }}"
+      blockinfile:
+        insertafter: EOF
+        path: "{{ persistent_path }}/docker-compose.yml"
+        block: "{{ lookup('template', playbook_dir+'/../../'+item.path+'docker-compose.yaml.j2') }}"
+        mode: "0644"
+        owner: pi
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+      ignore_errors: true
+      register: docker_compose
+
+    - name: "Recovering backup if needed"
+      when: docker_compose is failed
+      command: "mv {{ persistent_path }}/docker-compose.yml.bak {{ persistent_path }}/docker-compose.yml"
+
+    - name: "Remove backup if not needed"
+      when: docker_compose is not failed
+      command: "rm {{ persistent_path }}/docker-compose.yml.bak"
+      ignore_errors: true
+
+    - name: Start services
+      shell: "cd {{ persistent_path }} && docker-compose -f {{ persistent_path }}/docker-compose.yml up -d"

@@ -2,12 +2,71 @@
 - name: Deploy containers # Note that this is assuming very first setup has occurred, ssh/ip configs/dns/etc
   hosts: router
   tasks:
-    - name: Copy docker-compose
+    - name: Stop docker-compose services
+      shell: docker-compose -f /config/user-data/docker-compose.yml down
+      ignore_errors: true
+
+    - name: "Move docker-compose to backup"
+      command: mv /config/user-data/docker-compose.yml /config/user-data/docker-compose.yml.bak
+
+    - name: "Create docker-compose"
       copy:
         src: docker-compose.yml
-        dest: /config/user-data/docker-compose.yml
-        owner: "{{ lookup('env', 'vyos_user') }}"
+        dest: "{{ persistent_path }}/docker-compose.yml"
         mode: "0644"
+        owner: "{{ lookup('env', 'vyos_user') }}"
+
+    - name: Make ingress persistent dir
+      file:
+        path: /config/user-data/nginx
+        state: directory
+        owner: "{{ lookup('env', 'vyos_user') }}"
+        recurse: true
+        mode: "0775"
+
+    - name: "Copy ingress configs"
+      vars:
+        proxmox_servers: "{{ groups['proxmox'] }}"
+      template:
+        src: ../nginx/nginx.conf.j2
+        dest: /config/user-data/nginx/nginx.conf
+        owner: "{{ lookup('env', 'vyos_user') }}"
+        mode: "0775"
+        force: true
+
+    - name: "Generate key"
+      community.crypto.openssl_privatekey:
+        path: /config/user-data/nginx/cert.key
+        size: 2048
+        mode: "0644"
+        owner: "{{ lookup('env', 'vyos_user') }}"
+        force: true
+
+    - name: "Generate self signed cert for ingress"
+      community.crypto.x509_certificate:
+        path: /config/user-data/nginx/cert.pem
+        privatekey_path: /config/user-data/nginx/cert.key
+        provider: selfsigned
+
+    - name: Copy Container Configs
+      loop: "{{ containers }}"
+      blockinfile:
+        insertafter: EOF
+        path: /config/user-data/docker-compose.yml
+        block: "{{ lookup('template', playbook_dir+'/../../'+item.path+'docker-compose.yaml.j2') }}"
+        mode: "0644"
+        owner: "{{ lookup('env', 'vyos_user') }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+      ignore_errors: true
+      register: docker_compose
+
+    - name: "Recovering backup if needed"
+      when: docker_compose is failed
+      command: mv /config/user-data/docker-compose.yml.bak /config/user-data/docker-compose.yml
+
+    - name: "Remove backup if not needed"
+      when: docker_compose is not failed
+      command: rm /config/user-data/docker-compose.yml.bak
 
     - name: Start services
       shell: docker-compose -f /config/user-data/docker-compose.yml up -d

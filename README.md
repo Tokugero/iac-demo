@@ -19,7 +19,7 @@ To demonstrate my skills with SRE & DevOps functionality as a snapshot in time a
   - [x] ProtecCLI/VyOS Network Infrastructure
   - [x] Unifi Controller
   - [ ] MaaS.io (metal as a service) - bonus points
-  - [ ] Load Balancer
+  - [x] Load Balancer
   - [ ] Nexus Docker Image Caching
   - [ ] Jenkins CI/CD
 - [x] ProxMox Physical Hypervisors
