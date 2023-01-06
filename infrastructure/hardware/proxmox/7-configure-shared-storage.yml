@@ -1,0 +1,13 @@
+---
+- name: "Configure shared storage on pi"
+  hosts: proxmox
+  become: yes
+  tasks:
+    - name: Destroy shared storage
+      shell: "pvesh delete /storage/{{ groups['controllers'][0] }}"
+      ignore_errors: yes
+
+    - name: "Create shared storage"
+      when: primary == true
+      shell: "pvesh create /storage --type nfs --content rootdir,images,iso,backup,vztmpl --nodes {{ groups['proxmox'] | join(',') }} --storage {{ groups['controllers'][0] }} --server {{ hostvars[groups['controllers'][0]]['ansible_host'] }}   --export /opt/services/nfs --options vers=3,soft --path /mnt/nfs --disable 0"
+      ignore_errors: yes

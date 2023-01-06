@@ -8,6 +8,7 @@
       apt:
         update_cache: yes
         pkg:
+          - nfs-kernel-server
           - screen
           - vim
 
@@ -57,3 +58,36 @@
         fstype: ext4
         opts: defaults
         state: mounted
+
+    - name: "Get cloud_init files"
+      become: yes
+      get_url:
+        url: "{{ item['url'] }}"
+        dest: "/opt/services/nfs/images/{{ item['name'] }}.qcow2"
+        mode: 0755
+        owner: pi
+        group: pi
+      with_items: "{{ amis }}"
+
+    - name: "Create NFS mount"
+      file:
+        path: "{{ persistent_path }}/nfs"
+        state: directory
+        owner: pi
+        group: pi
+        mode: 0755
+
+    - name: "Create NFS export"
+      lineinfile:
+        path: /etc/exports
+        line: "{{ persistent_path }}/nfs *(rw,sync,no_subtree_check,no_root_squash)"
+        state: present
+        create: yes
+
+    - name: "Restart NFS"
+      service:
+        name: nfs-kernel-server
+        state: restarted
+
+    - name: "Apply NFS Mounts"
+      shell: exportfs -a

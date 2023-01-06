@@ -40,6 +40,9 @@ proxmox:
 controllers:
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -J tokugero@192.168.20.115'
+    amis:
+      - name: debian
+        url: https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2
   hosts:
     raspberrypi:
       mac: "e4:5f:01:6b:de:45"
