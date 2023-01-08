@@ -1,0 +1,22 @@
+---
+- name: "Configure shared storage on pi"
+  hosts: proxmox
+  become: yes
+  tasks:
+    - name: "Check if exists"
+      when: primary == true
+      with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
+      shell: "qm list | grep {{ item['id'] }} | awk '{print $1}'"
+      register: qm_list
+
+    - name: "Delete if exists"
+      when: primary == true and qm_list["results"][0]["stdout"]
+      with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
+      shell: "qm destroy {{ item['id'] }}"
+      ignore_errors: yes
+
+    - name: "Create base image(s)"
+      when: primary == true
+      with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
+      shell: "qm create {{ item['id'] }} --memory 512 --name {{ item['name'] }}-template --socket 1 --onboot no --scsi0 {{ groups['controllers'][0] }}:0,import-from=/mnt/nfs/images/{{ item['name'] }}"
+      ignore_errors: yes

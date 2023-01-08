@@ -7,7 +7,18 @@
       shell: "pvesh delete /storage/{{ groups['controllers'][0] }}"
       ignore_errors: yes
 
+    - name: Destroy nvme
+      shell: "pvesh delete /storage/nvme-{{ inventory_hostname }}"
+      ignore_errors: yes
+
     - name: "Create shared storage"
       when: primary == true
-      shell: "pvesh create /storage --type nfs --content rootdir,images,iso,backup,vztmpl --nodes {{ groups['proxmox'] | join(',') }} --storage {{ groups['controllers'][0] }} --server {{ hostvars[groups['controllers'][0]]['ansible_host'] }}   --export /opt/services/nfs --options vers=3,soft --path /mnt/nfs --disable 0"
+      shell: "pvesh create /storage --type nfs --content rootdir,images,iso,backup,vztmpl --nodes {{ groups['proxmox'] | join(',') }} --storage {{ groups['controllers'][0] }} --server {{ hostvars[groups['controllers'][0]]['ansible_host'] }} --export /opt/services/nfs --options vers=3,soft --path /mnt/nfs --disable 0"
       ignore_errors: yes
+
+    - name: "Update local storage"
+      shell: "pvesh create /storage --type dir --content rootdir,images --nodes {{ inventory_hostname }} --storage nvme-{{ inventory_hostname }} --path /mnt/nvme --disable 0"
+      ignore_errors: yes
+
+- name: "Import cloud-init templates"
+  import_playbook: 8-import-images.yml

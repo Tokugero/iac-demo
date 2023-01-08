@@ -4,3 +4,4 @@
 - import_playbook: ../../fabric/vyos/3-deploy-containers.yml
 - import_playbook: ../../hardware/proxmox/5-configure-pve.yml
 - import_playbook: ../../hardware/raspberrypi/6-configure-pi.yml
+- import_playbook: ../../hardware/proxmox/7-configure-pve.yml

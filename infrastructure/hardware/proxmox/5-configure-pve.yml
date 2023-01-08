@@ -18,6 +18,14 @@
         update_cache: yes
         upgrade: safe
 
+    - name: Mount NVME drives
+      mount:
+        path: /mnt/nvme
+        src: /dev/nvme0n1
+        fstype: ext4
+        opts: defaults
+        state: mounted
+
     - name: Set host files
       lineinfile:
         path: /etc/hosts
