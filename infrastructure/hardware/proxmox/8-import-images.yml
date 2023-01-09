@@ -4,19 +4,18 @@
   become: yes
   tasks:
     - name: "Check if exists"
-      when: primary == true
       with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
-      shell: "qm list | grep {{ item['id'] }} | awk '{print $1}'"
+      shell: "qm list | grep {{ item['name'] }} | awk '{print $1}'"
       register: qm_list
 
     - name: "Delete if exists"
-      when: primary == true and qm_list["results"][0]["stdout"]
-      with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
-      shell: "qm destroy {{ item['id'] }}"
+      when: qm_list["results"][0]["stdout"]
+      with_items: "{{ qm_list['results'] }}"
+      shell: "qm destroy {{ item['stdout'] }}"
       ignore_errors: yes
 
     - name: "Create base image(s)"
-      when: primary == true
-      with_items: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
-      shell: "qm create {{ item['id'] }} --memory 512 --name {{ item['name'] }}-template --socket 1 --onboot no --scsi0 {{ groups['controllers'][0] }}:0,import-from=/mnt/nfs/images/{{ item['name'] }}"
+      throttle: 1
+      loop: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
+      shell: "qm create $(pvesh get /cluster/nextid) --memory 512 --ostype l26 --name {{ item['name'] }}-template --socket 1 --onboot no --scsi0 {{ groups['controllers'][0] }}:0,import-from=/mnt/nfs/images/{{ item['name'] }} --template"
       ignore_errors: yes

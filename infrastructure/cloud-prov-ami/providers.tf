@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url = "https://10.10.10.1/api2/json"
+  pm_api_url = "https://192.168.20.251/api2/json"
 }
 

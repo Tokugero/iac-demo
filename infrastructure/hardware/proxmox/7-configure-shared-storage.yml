@@ -17,7 +17,7 @@
       ignore_errors: yes
 
     - name: "Update local storage"
-      shell: "pvesh create /storage --type dir --content rootdir,images --nodes {{ inventory_hostname }} --storage nvme-{{ inventory_hostname }} --path /mnt/nvme --disable 0"
+      shell: "pvesh create /storage --type dir --content rootdir,images,iso,backup,vztmpl --nodes {{ inventory_hostname }} --storage nvme-{{ inventory_hostname }} --path /mnt/nvme --disable 0"
       ignore_errors: yes
 
 - name: "Import cloud-init templates"
