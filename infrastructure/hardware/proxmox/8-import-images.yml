@@ -17,5 +17,10 @@
     - name: "Create base image(s)"
       throttle: 1
       loop: "{{ hostvars[groups['controllers'][0]]['amis'] }}"
-      shell: "qm create $(pvesh get /cluster/nextid) --memory 512 --ostype l26 --name {{ item['name'] }}-template --socket 1 --onboot no --scsi0 {{ groups['controllers'][0] }}:0,import-from=/mnt/nfs/images/{{ item['name'] }} --template"
+      shell: "qm create $(pvesh get /cluster/nextid) --memory 512 --citype nocloud --name {{ item['name'] }}-template --serial0 socket --socket 1 --onboot no --scsi0 {{ groups['controllers'][0] }}:0,import-from=/mnt/nfs/images/{{ item['name'] }} --template"
+      ignore_errors: yes
+
+    - name: "!Temp hack! Copy manual AMI"
+      throttle: 1
+      shell: "qm create $(pvesh get /cluster/nextid) --memory 512 --ostype l26 --name debian-raw --socket 1 --serial0 socket --onboot no --scsi0 raspberrypi:0,import-from=/mnt/nfs/images/debian.raw --template"
       ignore_errors: yes

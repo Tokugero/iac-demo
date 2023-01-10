@@ -27,7 +27,7 @@ To demonstrate my skills with SRE & DevOps functionality as a snapshot in time a
   - [x] Provisioned via Ansible
   - [x] Updated via Ansible
   - [x] Connected to NFS
-  - [ ] Base OS Cloud Provisioned
+  - [x] Base OS Cloud Provisioned
 - [ ] Terraform defined supplemental infrastructure
 - [ ] Terraform defined Kubernetes cluster
   - [ ] Deployed via Terraform
