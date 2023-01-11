@@ -38,8 +38,6 @@ resource "proxmox_vm_qemu" "cloudinit_test" {
   }
 
   cloudinit_cdrom_storage = "nvme-${each.key}"
-  ciuser                  = "root"
-  cipassword              = "root"
   os_type                 = "cloud-init"
   ipconfig0               = "ip=${each.value.ip},gw=10.10.10.1"
   sshkeys                 = <<EOF
