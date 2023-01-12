@@ -29,9 +29,9 @@ To demonstrate my skills with SRE & DevOps functionality as a snapshot in time a
   - [x] Connected to NFS
   - [x] Base OS Cloud Provisioned
 - [ ] Terraform defined supplemental infrastructure
-- [ ] Terraform defined Kubernetes cluster
-  - [ ] Deployed via Terraform
-  - [ ] Updated via Terraform
+- [x] Terraform defined Kubernetes cluster
+  - [x] Deployed via Ansible
+  - [x] Updated via Ansible
 - [ ] CDK8s defined supplemental infrastructure
   - [ ] Python Diagrams Implementation (bonus points)
   - [ ] Linkerd2 App Mesh

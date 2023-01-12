@@ -54,6 +54,31 @@ controllers:
         - name: nginx
           path: fabric/nexus/
 
+generic:
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -J tokugero@192.168.20.115'
+    ansible_user: debian
+  hosts:
+    docker-host:
+      ansible_host: 10.10.10.30
+
+k8s:
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -J tokugero@192.168.20.115'
+    ansible_user: debian
+  hosts:
+    k8s-master-001:
+      ansible_host: 10.10.10.31
+    k8s-worker-001:
+      ansible_host: 10.10.10.32
+    k8s-worker-002:
+      ansible_host: 10.10.10.33
+
+vms:
+  children:
+    generic:
+    k8s:
+
 all:
   children:
     router:
