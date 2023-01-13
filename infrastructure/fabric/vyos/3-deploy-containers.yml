@@ -27,6 +27,7 @@
     - name: "Copy ingress configs"
       vars:
         proxmox_servers: "{{ groups['proxmox'] }}"
+        k8s: "{{ groups['k8s'] }}"
       template:
         src: ../nginx/nginx.conf.j2
         dest: /config/user-data/nginx/nginx.conf
@@ -42,10 +43,23 @@
         owner: "{{ lookup('env', 'vyos_user') }}"
         force: true
 
+    - name: "CSR data"
+      community.crypto.openssl_csr:
+        path: /config/user-data/nginx/cert.csr
+        privatekey_path: /config/user-data/nginx/cert.key
+        common_name: "minilab.home"
+        subject:
+          commonName: "minilab.home"
+        subject_alt_name:
+          - "DNS:k8s-master-001"
+          - "DNS:proxmox.minilab.home"
+        mode: "0644"
+
     - name: "Generate self signed cert for ingress"
       community.crypto.x509_certificate:
         path: /config/user-data/nginx/cert.pem
         privatekey_path: /config/user-data/nginx/cert.key
+        csr_path: /config/user-data/nginx/cert.csr
         provider: selfsigned
 
     - name: Copy Container Configs

@@ -1,5 +1,17 @@
 events {}
 
+stream {
+    upstream k8s-master {
+        server 10.10.10.31:6443;
+    }
+
+    server {
+        listen 6443;
+
+        proxy_pass k8s-master;
+    }
+}
+
 http {
     # Proxmox LB
     upstream proxmox {
@@ -9,14 +21,15 @@ http {
         ip_hash;
     }
 
-    server {
-        listen 80 default_server;
-        rewrite ^(.*) https://$host$1 permanent;
+    upstream k8s {
+        {% for server in k8s %}
+        server {{ hostvars[server].ansible_host }}:80;
+        {% endfor %}
     }
 
     server {
         listen 443 ssl;
-        server_name _;
+        server_name proxmox.*;
         
         ssl_certificate /etc/nginx/cert.pem;
         ssl_certificate_key /etc/nginx/cert.key;
@@ -42,6 +55,34 @@ http {
             send_timeout  3600s;
             proxy_ssl_verify off;
             proxy_pass https://proxmox;
+        }
+    }
+
+
+    server {
+        listen 80;
+        server_name *.k8s.minilab.home;
+
+        proxy_redirect off;
+
+        location / {
+            proxy_set_header X-Real_IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-NginX-Proxy true;
+
+            real_ip_header X-Real-IP;
+            
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade"; 
+            proxy_buffering off;
+            client_max_body_size 0;
+            proxy_connect_timeout  3600s;
+            proxy_read_timeout  3600s;
+            proxy_send_timeout  3600s;
+            send_timeout  3600s;
+            proxy_pass http://k8s;
         }
     }
 }
